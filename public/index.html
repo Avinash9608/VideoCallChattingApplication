@@ -1,0 +1,281 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="auth-container">
+        <h1 class="title">Chat Application</h1>
+        <input
+          type="text"
+          id="email"
+          placeholder="Enter Email"
+          class="input-box"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Enter Password"
+          class="input-box"
+        />
+        <div class="btn-container">
+          <button onclick="signup()" class="btn">Signup</button>
+          <button onclick="login()" class="btn">Login</button>
+        </div>
+      </div>
+
+      <div id="chat-container" class="hidden">
+        <div class="profile-section">
+          <label for="profile-pic" class="profile-label">
+            <img
+              id="profile-img"
+              src="default-avatar.png"
+              alt="Profile Picture"
+            />
+          </label>
+          <input
+            type="file"
+            id="profile-pic"
+            accept="image/*"
+            onchange="updateProfilePic(event)"
+          />
+          <p id="user-email" class="user-email"></p>
+           Email will be updated here
+        </div>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+        <div id="chat-box"></div>
+        <div class="message-input">
+          <input
+            type="text"
+            id="message"
+            placeholder="Type a message"
+            class="input-box"
+          />
+          <button onclick="sendMessage()" class="btn send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      Authentication Section
+      <div id="auth-container">
+        <h1 class="title">Chat Application</h1>
+        <input
+          type="text"
+          id="email"
+          placeholder="Enter Email"
+          class="input-box"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Enter Password"
+          class="input-box"
+        />
+        <div class="btn-container">
+          <button onclick="signup()" class="btn">Signup</button>
+          <button onclick="login()" class="btn">Login</button>
+        </div>
+      </div>
+
+       Chat Section 
+      <div id="chat-container" class="hidden">
+        <div class="profile-section">
+          <label for="profile-pic" class="profile-label">
+            <img
+              id="profile-img"
+              src="default-avatar.png"
+              alt="Profile Picture"
+            />
+          </label>
+          <input
+            type="file"
+            id="profile-pic"
+            accept="image/*"
+            onchange="updateProfilePic(event)"
+          />
+          <p id="user-email" class="user-email"></p>
+          <div class="more-options">
+            <button onclick="toggleOptions()">&#x22EE;</button>
+            <div class="options-menu" id="options-menu">
+              <button onclick="logout()" class="logout-btn">Logout</button>
+              Call Button in Chat Interface 
+            </div>
+          </div>
+          <button id="call-button" onclick="startCall()">📞 Call</button>
+
+           Call Notification 
+          <div id="incoming-call" class="hidden">
+            <p id="caller-name"></p>
+            <button onclick="acceptCall()">Accept</button>
+            <button onclick="rejectCall()">Reject</button>
+          </div>
+        </div>
+
+         Chat Messages -
+        <div id="chat-box"></div>
+
+        <!-- Message Input Section -->
+<!-- <div class="message-input">
+          <input
+            type="text"
+            id="message"
+            placeholder="Type a message"
+            class="input-box"
+          />
+          <label for="fileInput" class="file-label">
+            <img
+              src="https://cdn-icons-png.freepik.com/512/8526/8526858.png?ga=GA1.1.1533417433.1733846717"
+              alt="Upload"
+              class="upload-icon"
+            />
+          </label>
+          <input type="file" id="fileInput" class="file-input" />
+          <button onclick="sendMessage()" class="btn send-btn">Send</button>
+        </div> 
+        <div class="message-input">
+          <input
+            type="text"
+            id="message"
+            placeholder="Type a message"
+            class="input-box"
+          />
+          <label for="fileInput" class="file-label">
+            <img
+              src="https://cdn-icons-png.freepik.com/512/8526/8526858.png?ga=GA1.1.1533417433.1733846717"
+              alt="Upload"
+              class="upload-icon"
+            />
+          </label>
+          <input
+            type="file"
+            id="fileInput"
+            class="file-input"
+            onchange="sendFile()"
+          />
+          <button onclick="sendMessage()" class="btn send-btn">Send</button>
+           <button onclick="sendFile()" class="btn send-btn">Send File</button> 
+        </div>
+      </div>
+    </div>
+  </body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.3.2/dist/peerjs.min.js"></script>
+    <script defer src="script.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Authentication Section -->
+      <div id="auth-container">
+        <h1 class="title">Chat Application</h1>
+        <input
+          type="text"
+          id="email"
+          placeholder="Enter Email"
+          class="input-box"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Enter Password"
+          class="input-box"
+        />
+        <div class="btn-container">
+          <button onclick="signup()" class="btn">Signup</button>
+          <button onclick="login()" class="btn">Login</button>
+        </div>
+      </div>
+
+      <!-- Chat Section -->
+      <div id="chat-container" class="hidden">
+        <div class="profile-section">
+          <label for="profile-pic" class="profile-label">
+            <img
+              id="profile-img"
+              src="default-avatar.png"
+              alt="Profile Picture"
+            />
+          </label>
+          <input
+            type="file"
+            id="profile-pic"
+            accept="image/*"
+            onchange="updateProfilePic(event)"
+          />
+          <p id="user-email" class="user-email"></p>
+          <div class="more-options">
+            <button onclick="toggleOptions()">&#x22EE;</button>
+            <div class="options-menu" id="options-menu">
+              <button onclick="logout()" class="logout-btn">Logout</button>
+            </div>
+          </div>
+          <button id="call-button" onclick="startCall()">📞 Call</button>
+
+          <!-- Call Notification -->
+          <div id="incoming-call" class="hidden">
+            <p id="caller-name"></p>
+            <button onclick="acceptCall()">Accept</button>
+            <button onclick="rejectCall()">Reject</button>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="chat-box"></div>
+        <ul id="users-list"></ul>
+        <!-- Add this to your HTML -->
+        <video id="remote-video" autoplay></video>
+        <!-- Message Input Section -->
+        <div class="message-input">
+          <input
+            type="text"
+            id="message"
+            placeholder="Type a message"
+            class="input-box"
+          />
+          <label for="fileInput" class="file-label">
+            <img
+              src="https://cdn-icons-png.freepik.com/512/8526/8526858.png?ga=GA1.1.1533417433.1733846717"
+              alt="Upload"
+              class="upload-icon"
+            />
+          </label>
+          <input
+            type="file"
+            id="fileInput"
+            class="file-input"
+            onchange="sendFile()"
+          />
+          <button onclick="sendMessage()" class="btn send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
