@@ -811,6 +811,7 @@ let localStream = null; // Store the local media stream globally
 let currentCall = null; // Store the current call globally
 let isFrontCamera = true; // Track the current camera (front or back)
 let peer = null; // Peer instance for WebRTC
+let callerEmail = null; // Store the caller's email for incoming calls
 
 // Utility functions to show/hide UI sections
 const showChat = () => {
@@ -880,25 +881,14 @@ window.login = async () => {
 
       // Handle incoming call
       peer.on("call", (call) => {
-        // Answer the call with the local stream
-        getMediaStream(isFrontCamera).then((stream) => {
-          localStream = stream;
-          document.getElementById("local-video").srcObject = localStream;
-          call.answer(localStream);
+        // Show incoming call notification
+        document.getElementById("incoming-call").classList.remove("hidden");
+        document.getElementById(
+          "caller-name"
+        ).innerText = `${callerEmail} is calling`;
 
-          // Handle remote stream
-          call.on("stream", (remoteStream) => {
-            document.getElementById("remote-video").srcObject = remoteStream;
-          });
-
-          // Handle call end
-          call.on("close", () => {
-            if (localStream) {
-              localStream.getTracks().forEach((track) => track.stop());
-            }
-            currentCall = null;
-          });
-        });
+        // Store the call object globally
+        currentCall = call;
       });
     }
   } catch (error) {
@@ -1089,24 +1079,49 @@ window.startCall = async (recipientEmail) => {
     return;
   }
 
-  localStream = await getMediaStream(isFrontCamera); // Get media stream with the current camera
+  // Notify the recipient of the incoming call
+  socket.emit("incoming-call", {
+    recipientEmail,
+    callerEmail: document.getElementById("user-email").textContent,
+  });
+
+  // Show a message that the call is being initiated
+  alert(`Calling ${recipientEmail}...`);
+};
+
+// Handle incoming call notification
+socket.on("incoming-call", (data) => {
+  callerEmail = data.callerEmail; // Store the caller's email
+  document.getElementById("incoming-call").classList.remove("hidden");
+  document.getElementById(
+    "caller-name"
+  ).innerText = `${callerEmail} is calling`;
+});
+
+// Accept call function
+window.acceptCall = async () => {
+  if (!callerEmail) return;
+
+  // Hide the incoming call notification
+  document.getElementById("incoming-call").classList.add("hidden");
+
+  // Get the local media stream
+  localStream = await getMediaStream(isFrontCamera);
   if (!localStream) return;
 
-  // Display local video
+  // Display the local video
   document.getElementById("local-video").srcObject = localStream;
 
-  // Initiate a call to the recipient
-  const call = peer.call(recipientEmail, localStream);
-  currentCall = call; // Store the current call
+  // Answer the call
+  currentCall.answer(localStream);
 
-  // Handle remote stream
-  call.on("stream", (remoteStream) => {
+  // Handle the remote stream
+  currentCall.on("stream", (remoteStream) => {
     document.getElementById("remote-video").srcObject = remoteStream;
   });
 
   // Handle call end
-  call.on("close", () => {
-    // Stop local media tracks when the call ends
+  currentCall.on("close", () => {
     if (localStream) {
       localStream.getTracks().forEach((track) => track.stop());
     }
@@ -1114,46 +1129,10 @@ window.startCall = async (recipientEmail) => {
   });
 };
 
-// Handle incoming call
-socket.on("incoming-call", (data) => {
-  document.getElementById("incoming-call").classList.remove("hidden");
-  document.getElementById(
-    "caller-name"
-  ).innerText = `${data.callerEmail} is calling`;
-});
-
-// Accept call function
-window.acceptCall = async () => {
-  const callerEmail = document
-    .getElementById("caller-name")
-    .textContent.split(" is calling")[0];
-
-  localStream = await getMediaStream(isFrontCamera); // Get media stream with the current camera
-  if (!localStream) return;
-
-  // Display local video
-  document.getElementById("local-video").srcObject = localStream;
-
-  // Answer the call
-  const call = peer.call(callerEmail, localStream);
-  currentCall = call; // Store the current call
-
-  // Handle remote stream
-  call.on("stream", (remoteStream) => {
-    document.getElementById("remote-video").srcObject = remoteStream;
-  });
-
-  // Handle call end
-  call.on("close", () => {
-    // Stop local media tracks when the call ends
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-    }
-    currentCall = null;
-  });
-
-  socket.emit("accept-call", { callerEmail });
+// Reject call function
+window.rejectCall = () => {
   document.getElementById("incoming-call").classList.add("hidden");
+  callerEmail = null;
 };
 
 // Switch camera function
