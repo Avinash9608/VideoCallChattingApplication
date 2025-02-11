@@ -1030,42 +1030,6 @@ socket.on("online-users", (users) => {
 });
 
 // Start call function
-// window.startCall = (recipientEmail) => {
-//   if (!recipientEmail) {
-//     alert("No recipient selected.");
-//     return;
-//   }
-
-//   navigator.mediaDevices
-//     .getUserMedia({ video: true, audio: true })
-//     .then((stream) => {
-//       localStream = stream; // Store the stream globally
-//       document.getElementById("local-video").srcObject = stream; // Display local video
-
-//       const call = peer.call(recipientEmail, stream);
-//       currentCall = call; // Store the current call
-
-//       call.on("stream", (remoteStream) => {
-//         document.getElementById("remote-video").srcObject = remoteStream; // Display remote video
-//       });
-
-//       call.on("close", () => {
-//         // Stop local media tracks when the call ends
-//         if (localStream) {
-//           localStream.getTracks().forEach((track) => track.stop());
-//         }
-//         currentCall = null;
-//       });
-//     })
-//     .catch((error) => {
-//       console.error("Error accessing media devices:", error);
-//     });
-
-//   socket.emit("call-user", {
-//     recipientEmail,
-//     callerEmail: document.getElementById("user-email").textContent,
-//   });
-// };
 window.startCall = (recipientEmail) => {
   if (!recipientEmail) {
     alert("No recipient selected.");
@@ -1076,13 +1040,13 @@ window.startCall = (recipientEmail) => {
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       localStream = stream;
-      document.getElementById("local-video").srcObject = stream; // Show local video properly
+      document.getElementById("local-video").srcObject = stream; // Show local video on User A's side
 
       const call = peer.call(recipientEmail, stream);
       currentCall = call;
 
       call.on("stream", (remoteStream) => {
-        document.getElementById("remote-video").srcObject = remoteStream; // Show remote video properly
+        document.getElementById("remote-video").srcObject = remoteStream; // Show remote video on User A's side
       });
 
       call.on("close", () => {
@@ -1111,43 +1075,6 @@ socket.on("incoming-call", (data) => {
 });
 
 // Accept Call
-// window.acceptCall = () => {
-//   const callerEmail = document
-//     .getElementById("caller-name")
-//     .textContent.split(" is calling")[0];
-
-//   navigator.mediaDevices
-//     .getUserMedia({
-//       video: { deviceId: localStorage.getItem("preferredCamera") || undefined },
-//       audio: {
-//         deviceId: localStorage.getItem("preferredMicrophone") || undefined,
-//       },
-//     })
-//     .then((stream) => {
-//       localStream = stream;
-//       document.getElementById("local-video").srcObject = stream; // Display local video
-
-//       const call = peer.call(callerEmail, stream);
-//       currentCall = call;
-
-//       call.on("stream", (remoteStream) => {
-//         document.getElementById("remote-video").srcObject = remoteStream; // Display remote video
-//       });
-
-//       call.on("close", () => {
-//         if (localStream) {
-//           localStream.getTracks().forEach((track) => track.stop());
-//         }
-//         currentCall = null;
-//       });
-//     })
-//     .catch((error) => {
-//       console.error("Error accessing media devices:", error);
-//     });
-
-//   socket.emit("accept-call", { callerEmail });
-//   document.getElementById("incoming-call").classList.add("hidden");
-// };
 window.acceptCall = () => {
   const callerEmail = document
     .getElementById("caller-name")
@@ -1162,13 +1089,13 @@ window.acceptCall = () => {
     })
     .then((stream) => {
       localStream = stream;
-      document.getElementById("local-video").srcObject = stream; // Show local video properly
+      document.getElementById("local-video").srcObject = stream; // Show local video on User B's side
 
       const call = peer.call(callerEmail, stream);
       currentCall = call;
 
       call.on("stream", (remoteStream) => {
-        document.getElementById("remote-video").srcObject = remoteStream; // Show remote video properly
+        document.getElementById("remote-video").srcObject = remoteStream; // Show remote video on User B's side
       });
 
       call.on("close", () => {
@@ -1263,17 +1190,19 @@ window.switchCamera = async () => {
       console.error("Error switching camera:", error);
     });
 };
+
+// Handle incoming calls
 peer.on("call", (call) => {
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       localStream = stream;
-      document.getElementById("remote-video").srcObject = stream; // Display local video on remote video element
+      document.getElementById("local-video").srcObject = stream; // Show local video on User B's side
 
       call.answer(stream); // Answer the call with the local stream
 
       call.on("stream", (remoteStream) => {
-        document.getElementById("local-video").srcObject = remoteStream; // Display remote video on local video element
+        document.getElementById("remote-video").srcObject = remoteStream; // Show remote video on User B's side
       });
 
       call.on("close", () => {
@@ -1287,6 +1216,8 @@ peer.on("call", (call) => {
       console.error("Error answering call:", error);
     });
 });
+
+// End call function
 window.endCall = () => {
   if (currentCall) {
     currentCall.close();
