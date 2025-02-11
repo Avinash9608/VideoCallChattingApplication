@@ -805,11 +805,12 @@
 //   alert(`User ${data.recipientEmail} is not available`);
 // });
 
-//INCOMING CALL TRY 2ND
+// Incoming Call
 const socket = io();
 let localStream = null; // Store the local media stream globally
 let currentCall = null; // Store the current call globally
 let isFrontCamera = true; // Track the current camera (front or back)
+let peer = null; // Peer instance for WebRTC
 
 // Utility functions to show/hide UI sections
 const showChat = () => {
@@ -823,6 +824,7 @@ const showAuth = () => {
   document.getElementById("auth-container").classList.remove("hidden");
   document.getElementById("chat-container").classList.add("hidden");
 };
+
 // Signup function
 window.signup = async () => {
   const email = document.getElementById("email").value;
@@ -863,7 +865,41 @@ window.login = async () => {
     if (res.ok) {
       showChat();
       socket.emit("join", email);
-      socket.emit("register-user", { email }); // Register user with their email
+
+      // Initialize PeerJS with the user's email as the ID
+      peer = new Peer(email, {
+        host: "your-peerjs-server.com", // Replace with your PeerJS server
+        port: 9000,
+        path: "/myapp",
+      });
+
+      // Handle peer connection
+      peer.on("open", (id) => {
+        console.log("PeerJS connected with ID:", id);
+      });
+
+      // Handle incoming call
+      peer.on("call", (call) => {
+        // Answer the call with the local stream
+        getMediaStream(isFrontCamera).then((stream) => {
+          localStream = stream;
+          document.getElementById("local-video").srcObject = localStream;
+          call.answer(localStream);
+
+          // Handle remote stream
+          call.on("stream", (remoteStream) => {
+            document.getElementById("remote-video").srcObject = remoteStream;
+          });
+
+          // Handle call end
+          call.on("close", () => {
+            if (localStream) {
+              localStream.getTracks().forEach((track) => track.stop());
+            }
+            currentCall = null;
+          });
+        });
+      });
     }
   } catch (error) {
     console.error("Login Error:", error);
@@ -1006,8 +1042,6 @@ socket.on("file", (data) => {
   }
 });
 
-const peer = new Peer(); // Use PeerJS for WebRTC calls
-
 // Render online users list
 socket.on("online-users", (users) => {
   const usersList = document.getElementById("users-list");
@@ -1059,8 +1093,7 @@ window.startCall = async (recipientEmail) => {
   if (!localStream) return;
 
   // Display local video
-  const localVideo = document.getElementById("local-video");
-  localVideo.srcObject = localStream;
+  document.getElementById("local-video").srcObject = localStream;
 
   // Initiate a call to the recipient
   const call = peer.call(recipientEmail, localStream);
@@ -1068,8 +1101,7 @@ window.startCall = async (recipientEmail) => {
 
   // Handle remote stream
   call.on("stream", (remoteStream) => {
-    const remoteVideo = document.getElementById("remote-video");
-    remoteVideo.srcObject = remoteStream;
+    document.getElementById("remote-video").srcObject = remoteStream;
   });
 
   // Handle call end
@@ -1079,11 +1111,6 @@ window.startCall = async (recipientEmail) => {
       localStream.getTracks().forEach((track) => track.stop());
     }
     currentCall = null;
-  });
-
-  socket.emit("call-user", {
-    recipientEmail,
-    callerEmail: document.getElementById("user-email").textContent,
   });
 };
 
@@ -1105,8 +1132,7 @@ window.acceptCall = async () => {
   if (!localStream) return;
 
   // Display local video
-  const localVideo = document.getElementById("local-video");
-  localVideo.srcObject = localStream;
+  document.getElementById("local-video").srcObject = localStream;
 
   // Answer the call
   const call = peer.call(callerEmail, localStream);
@@ -1114,8 +1140,7 @@ window.acceptCall = async () => {
 
   // Handle remote stream
   call.on("stream", (remoteStream) => {
-    const remoteVideo = document.getElementById("remote-video");
-    remoteVideo.srcObject = remoteStream;
+    document.getElementById("remote-video").srcObject = remoteStream;
   });
 
   // Handle call end
@@ -1126,146 +1151,31 @@ window.acceptCall = async () => {
     }
     currentCall = null;
   });
+
   socket.emit("accept-call", { callerEmail });
   document.getElementById("incoming-call").classList.add("hidden");
 };
 
-// Reject call function
-window.rejectCall = () => {
-  const callerEmail = document
-    .getElementById("caller-name")
-    .textContent.split(" is calling")[0];
-
-  // Stop local media tracks
+// Switch camera function
+window.switchCamera = async () => {
+  isFrontCamera = !isFrontCamera; // Toggle camera
   if (localStream) {
-    localStream.getTracks().forEach((track) => track.stop());
+    localStream.getTracks().forEach((track) => track.stop()); // Stop current tracks
   }
 
-  socket.emit("reject-call", { callerEmail });
-  document.getElementById("incoming-call").classList.add("hidden");
-};
-
-// Switch camera function
-window.switchCamera = async () => {
+  localStream = await getMediaStream(isFrontCamera); // Get new stream with the toggled camera
   if (!localStream) return;
 
-  // Stop the current video tracks
-  localStream.getVideoTracks().forEach((track) => track.stop());
+  // Update local video
+  document.getElementById("local-video").srcObject = localStream;
 
-  // Toggle camera mode
-  isFrontCamera = !isFrontCamera;
-
-  // Get a new media stream with the updated camera
-  const newStream = await getMediaStream(isFrontCamera);
-  if (!newStream) return;
-
-  localStream = newStream;
-
-  // Update the local video element
-  const localVideo = document.getElementById("local-video");
-  if (localVideo) {
-    localVideo.srcObject = localStream;
-  }
-
-  // Replace the video track in the current call (if active)
+  // If there's an ongoing call, replace the stream
   if (currentCall) {
-    const videoTrack = localStream.getVideoTracks()[0];
     const sender = currentCall.peerConnection
       .getSenders()
       .find((s) => s.track.kind === "video");
     if (sender) {
-      sender.replaceTrack(videoTrack);
+      sender.replaceTrack(localStream.getVideoTracks()[0]);
     }
   }
 };
-
-// Switch camera function
-window.switchCamera = async () => {
-  if (!localStream) return;
-
-  // Stop the current video tracks
-  localStream.getVideoTracks().forEach((track) => track.stop());
-
-  // Toggle camera mode
-  isFrontCamera = !isFrontCamera;
-
-  // Get a new media stream with the updated camera
-  const newStream = await getMediaStream(isFrontCamera);
-  if (!newStream) return;
-
-  localStream = newStream;
-
-  // Update the local video element (if you have one)
-  const localVideo = document.getElementById("local-video");
-  if (localVideo) {
-    localVideo.srcObject = localStream;
-  }
-
-  // Replace the video track in the current call (if active)
-  if (currentCall) {
-    const videoTrack = localStream.getVideoTracks()[0];
-    const sender = currentCall.peerConnection
-      .getSenders()
-      .find((s) => s.track.kind === "video");
-    if (sender) {
-      sender.replaceTrack(videoTrack);
-    }
-  }
-};
-// Handle incoming call
-socket.on("incoming-call", (data) => {
-  document.getElementById("incoming-call").classList.remove("hidden");
-  document.getElementById(
-    "caller-name"
-  ).innerText = `${data.callerEmail} is calling`;
-});
-
-// Handle call accepted
-socket.on("call-accepted", (data) => {
-  alert(`Call accepted by ${data.recipientEmail}`);
-});
-
-// Handle call rejected
-socket.on("call-rejected", (data) => {
-  alert(`Call rejected by ${data.recipientEmail}`);
-});
-
-// Handle user not available
-socket.on("user-not-available", (data) => {
-  alert(`User ${data.recipientEmail} is not available`);
-});
-
-// PeerJS call handling
-peer.on("call", (call) => {
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      localStream = stream; // Store the stream globally
-
-      // Display local video
-      const localVideo = document.getElementById("local-video");
-      localVideo.srcObject = localStream;
-
-      // Answer the call with the local stream
-      call.answer(localStream);
-      currentCall = call; // Store the current call
-
-      // Handle remote stream
-      call.on("stream", (remoteStream) => {
-        const remoteVideo = document.getElementById("remote-video");
-        remoteVideo.srcObject = remoteStream;
-      });
-
-      // Handle call end
-      call.on("close", () => {
-        // Stop local media tracks when the call ends
-        if (localStream) {
-          localStream.getTracks().forEach((track) => track.stop());
-        }
-        currentCall = null;
-      });
-    })
-    .catch((error) => {
-      console.error("Error accessing media devices:", error);
-    });
-});
