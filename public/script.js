@@ -805,7 +805,6 @@
 //   alert(`User ${data.recipientEmail} is not available`);
 // });
 
-// Incoming Call
 const socket = io();
 let localStream = null; // Store the local media stream globally
 let currentCall = null; // Store the current call globally
