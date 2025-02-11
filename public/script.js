@@ -880,7 +880,7 @@ window.login = async () => {
 
       // Handle incoming call
       peer.on("call", (call) => {
-        // Show incoming call notification
+        // Show incoming call notification on the receiver's side
         document.getElementById("incoming-call").classList.remove("hidden");
         document.getElementById(
           "caller-name"
