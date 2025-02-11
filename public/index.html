@@ -353,8 +353,13 @@
         <div id="chat-box"></div>
         <ul id="users-list"></ul>
         <!-- Video Elements -->
-        <video id="local-video" autoplay muted></video>
-        <video id="remote-video" autoplay></video>
+        <div class="video-container">
+          <video id="remote-video" autoplay></video>
+          <video id="local-video" autoplay muted></video>
+        </div>
+
+        <!-- Add a camera switch button -->
+        <button onclick="switchCamera()">Switch Camera</button>
         <!-- Message Input Section -->
         <div class="message-input">
           <input
