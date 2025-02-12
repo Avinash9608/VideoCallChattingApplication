@@ -549,13 +549,26 @@ io.on("connection", (socket) => {
     console.log("📢 Current Users:", userSocketMapping);
   });
 
-  // Handle call request
-  socket.on("call-user", ({ recipientEmail, callerEmail }) => {
+  socket.on("call-user", ({ recipientEmail, callerEmail, offer }) => {
     const recipientSocket = userSocketMapping[recipientEmail];
     if (recipientSocket) {
-      io.to(recipientSocket).emit("incoming-call", { callerEmail });
+      io.to(recipientSocket).emit("incoming-call", { callerEmail, offer });
     } else {
       socket.emit("user-not-available", { recipientEmail });
+    }
+  });
+
+  socket.on("answer-call", ({ recipientEmail, answer }) => {
+    const recipientSocket = userSocketMapping[recipientEmail];
+    if (recipientSocket) {
+      io.to(recipientSocket).emit("call-answered", { answer });
+    }
+  });
+
+  socket.on("ice-candidate", ({ recipientEmail, candidate }) => {
+    const recipientSocket = userSocketMapping[recipientEmail];
+    if (recipientSocket) {
+      io.to(recipientSocket).emit("ice-candidate", { candidate });
     }
   });
 
@@ -582,6 +595,17 @@ io.on("connection", (socket) => {
   socket.on("join", (email) => {
     onlineUsers.add(email);
     io.emit("online-users", Array.from(onlineUsers));
+  });
+
+  // Handle get-peer-id event
+  socket.on("get-peer-id", ({ recipientEmail }, callback) => {
+    const recipientSocket = userSocketMapping[recipientEmail];
+    if (recipientSocket) {
+      const peerId = peerIdMapping[recipientEmail]; // Assuming you have a peerIdMapping
+      callback({ peerId });
+    } else {
+      callback({ peerId: null });
+    }
   });
 
   socket.on("disconnect", () => {
